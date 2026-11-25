@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Junction traffic forecasts{% endblock %}
+{% block main_class %}landing{% endblock %}
+{% block content %}
+<section class="hero">
+  <img class="hero__img" src="{{ asset('img/hero.svg') }}" alt="" width="1200" height="700">
+  <div class="hero__body">
+    <p class="eyebrow">Six junctions · forecasts up to an hour ahead</p>
+    <h1>Know how busy each junction will be before you get there.</h1>
+    <p class="lead">Traffic Predictor forecasts vehicle counts 5, 15, 30 and 60 minutes ahead,
+      with a likely range and a congestion level for every junction.</p>
+    <div class="hero__cta">
+      {% if g.user %}
+        <a class="btn btn--primary btn--lg" href="{{ url_for('views.dashboard') }}">Open the dashboard</a>
+      {% else %}
+        {% if config.REGISTRATION_OPEN %}<a class="btn btn--primary btn--lg" href="{{ url_for('auth.register') }}">Create a free account</a>{% endif %}
+        <a class="btn btn--secondary btn--lg" href="{{ url_for('auth.login') }}">Sign in</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="features" aria-labelledby="features-title">
+  <h2 id="features-title" class="section-title">What you get</h2>
+  <div class="feature-grid">
+    <article class="card feature">
+      <h3>Forecasts with a range</h3>
+      <p>Every forecast comes with an 80% range. The range was measured on days the model never trained on, so it shows how far off forecasts usually are.</p>
+    </article>
+    <article class="card feature">
+      <h3>Congestion at a glance</h3>
+      <p>Each junction is rated low, moderate or heavy against its own history, now and for the next hour. Spot the busy ones before they jam.</p>
+    </article>
+    <article class="card feature">
+      <h3>Accuracy you can check</h3>
+      <p>The model page compares every horizon with simple baselines on held-out days. The dashboard tracks today's error as the day goes on.</p>
+    </article>
+  </div>
+</section>
+
+<section class="how card" aria-labelledby="how-title">
+  <h2 id="how-title" class="section-title">How it works</h2>
+  <ol class="steps">
+    <li><strong>Recorded counts.</strong> 56 days of vehicle counts from six junctions, read every 5 minutes. Sensor outages are treated as missing, not as empty roads.</li>
+    <li><strong>A model per horizon.</strong> Gradient-boosted trees learn from the last few hours, the same time yesterday and the same time last week.</li>
+    <li><strong>An honest replay.</strong> There is no live feed, so the dashboard replays the final eight days, which were held out from training, in step with your clock.</li>
+  </ol>
+  <p><a href="{{ url_for('views.model_report') }}">Read the full model report →</a></p>
+</section>
+{% endblock %}

@@ -1,0 +1,10 @@
+# Runtime dependencies, pinned to the versions the model was trained and tested with.
+# scikit-learn must match the version that saved models/forecaster.joblib; retrain after upgrading it.
+Flask==3.1.3
+Werkzeug==3.1.9
+numpy==2.4.6
+pandas==3.1.1
+scikit-learn==1.9.1
+scipy==1.17.1
+joblib==1.6.0
+waitress==3.0.2

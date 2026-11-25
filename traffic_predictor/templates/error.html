@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ error.code }} {{ error.name }}{% endblock %}
+{% block content %}
+<section class="card narrow error-page">
+  <p class="eyebrow">Error {{ error.code }}</p>
+  <h1>{{ error.name }}</h1>
+  <p>{{ error.description }}</p>
+  <p class="actions">
+    <a class="btn btn--primary" href="{{ url_for('views.index') }}">Go to the home page</a>
+    {% if g.user %}<a class="btn btn--secondary" href="{{ url_for('views.dashboard') }}">Dashboard</a>{% endif %}
+  </p>
+</section>
+{% endblock %}

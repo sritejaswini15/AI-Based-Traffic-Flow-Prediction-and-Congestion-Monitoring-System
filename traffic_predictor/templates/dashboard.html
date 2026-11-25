@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block main_class %}page page--wide{% endblock %}
+{% block content %}
+<div id="dashboard" class="dashboard"
+     data-snapshot-url="{{ url_for('api.snapshot') }}"
+     data-csv-url="{{ url_for('api.forecasts_csv', day=0) }}"
+     data-first-day="{{ meta.replay.first_day }}"
+     data-last-day="{{ meta.replay.last_day }}">
+
+  <header class="dash-head">
+    <div>
+      <h1>Junction traffic</h1>
+      <p class="replay-status" aria-live="polite">
+        <span class="pill" id="mode-pill">Live replay</span>
+        <strong id="replay-label">Loading…</strong>
+        <span class="muted" id="replay-note">Recorded counts from a held-out day, in step with your clock. Not a live sensor feed.</span>
+      </p>
+    </div>
+  </header>
+
+  <form class="toolbar" id="controls" aria-label="Replay controls">
+    <div class="toolbar__group">
+      <label class="field field--inline">
+        <span>Day</span>
+        <select id="ctl-day">
+          {% for d in range(meta.replay.first_day, meta.replay.last_day + 1) %}<option value="{{ d }}">Day {{ d }}</option>{% endfor %}
+        </select>
+      </label>
+      <label class="field field--inline">
+        <span>Time</span>
+        <input type="time" id="ctl-time" step="300" required>
+      </label>
+      <div class="btn-group" role="group" aria-label="Step through time">
+        <button type="button" class="btn btn--secondary btn--sm" id="ctl-back" title="5 minutes earlier">−5 min</button>
+        <button type="button" class="btn btn--secondary btn--sm" id="ctl-play" aria-pressed="false">Play</button>
+        <button type="button" class="btn btn--secondary btn--sm" id="ctl-fwd" title="5 minutes later">+5 min</button>
+      </div>
+      <button type="button" class="btn btn--ghost btn--sm" id="ctl-live">Follow clock</button>
+    </div>
+    <div class="toolbar__group">
+      <label class="field field--inline">
+        <span>Chart</span>
+        <select id="ctl-junction">
+          {% for name in meta.junctions %}<option value="{{ loop.index0 }}">{{ name }}</option>{% endfor %}
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="ctl-outcomes"> Show what happened next</label>
+      <a class="btn btn--ghost btn--sm" id="ctl-csv" href="#" download>Download day as CSV</a>
+    </div>
+  </form>
+
+  <p class="notice notice--error" id="load-error" role="alert" hidden></p>
+
+  <div id="dash-body" class="dash-body">
+    <section class="kpis" aria-label="Network summary">
+      <article class="kpi kpi--hero">
+        <h2 class="kpi__label">Vehicles across all junctions</h2>
+        <p class="kpi__value" id="kpi-now">–</p>
+        <p class="kpi__sub" id="kpi-now-sub">&nbsp;</p>
+      </article>
+      <article class="kpi">
+        <h2 class="kpi__label">Forecast in 60 minutes</h2>
+        <p class="kpi__value" id="kpi-60">–</p>
+        <p class="kpi__sub" id="kpi-60-sub">&nbsp;</p>
+      </article>
+      <article class="kpi">
+        <h2 class="kpi__label">Junctions at heavy level</h2>
+        <p class="kpi__value" id="kpi-heavy">–</p>
+        <p class="kpi__sub" id="kpi-heavy-sub">&nbsp;</p>
+      </article>
+      <article class="kpi">
+        <h2 class="kpi__label">Busiest junction now</h2>
+        <p class="kpi__value kpi__value--text" id="kpi-busiest">–</p>
+        <p class="kpi__sub" id="kpi-busiest-sub">&nbsp;</p>
+      </article>
+    </section>
+
+    <section aria-labelledby="junctions-title">
+      <h2 class="section-title" id="junctions-title">Junctions <span class="muted">· choose one to chart it</span></h2>
+      <div class="junction-grid" id="junction-grid">
+        {% for name in meta.junctions %}
+          <button type="button" class="junction" data-index="{{ loop.index0 }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">
+            <span class="junction__name">{{ name }}</span>
+            <span class="junction__now">–</span>
+          </button>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="card focus" aria-labelledby="focus-title">
+      <header class="focus__head">
+        <div>
+          <h2 id="focus-title">{{ meta.junctions[0] }}</h2>
+          <p class="muted" id="focus-sub">Vehicles per 5-minute reading: the last 6 hours and the next hour.</p>
+        </div>
+        <p class="focus__accuracy" id="focus-accuracy"></p>
+      </header>
+      <ul class="legend" id="focus-legend" aria-label="Chart legend">
+        <li><span class="key key--recorded"></span>Recorded</li>
+        <li><span class="key key--ahead"></span>Forecast now, with 80% range</li>
+        <li><span class="key key--earlier"></span>Forecast made 60 min before</li>
+        <li><span class="key key--typical"></span>Typical for this time of day</li>
+      </ul>
+      <div class="chart-wrap">
+        <canvas id="focus-chart" role="img" aria-label="Recorded and forecast vehicle counts for the selected junction"></canvas>
+      </div>
+
+      <div class="focus__tables">
+        <div>
+          <h3>Forecasts from now</h3>
+          <div class="table-scroll">
+            <table class="table" id="forecast-table">
+              <thead><tr><th scope="col">Horizon</th><th scope="col">Forecast</th><th scope="col">80% range</th><th scope="col">Level</th><th scope="col" class="outcome-col">Actual</th><th scope="col" class="outcome-col">Error</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <details class="data-details">
+          <summary>Chart data as a table</summary>
+          <div class="table-scroll table-scroll--tall">
+            <table class="table table--compact" id="chart-table">
+              <thead><tr><th scope="col">Time</th><th scope="col">Recorded</th><th scope="col">Forecast made 60 min before</th><th scope="col">Forecast now</th><th scope="col">80% range</th><th scope="col">Typical</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <p class="footnote">Levels compare a count with that junction's own history: <strong>low</strong> is below its median, <strong>moderate</strong> is up to its 85th percentile, and <strong>heavy</strong> is above it.
+      Readings are 5 minutes apart and day 1 starts at midnight. Both were inferred from the data's daily cycle, because the source has no timestamps.
+      <a href="{{ url_for('views.model_report') }}">Model accuracy and limits</a>.</p>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ asset('vendor/chartjs/chart.umd.min.js') }}" defer></script>
+<script src="{{ asset('js/dashboard.js') }}" defer></script>
+{% endblock %}

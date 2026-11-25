@@ -1,0 +1,22 @@
+# Secrets: never commit
+kaggle.json
+.env
+instance/
+
+# Environment and caches
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Trained model: rebuild with `python -m scripts.train` (it is tied to the scikit-learn version)
+models/*.joblib
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# Dataset: download from Kaggle (see README); its licence does not allow re-publishing it here
+data/*.csv
+
+# Original v1 prototype, kept locally only
+legacy/

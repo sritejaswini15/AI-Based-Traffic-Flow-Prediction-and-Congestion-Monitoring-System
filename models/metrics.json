@@ -1,0 +1,361 @@
+{
+  "dataset": {
+    "file": "traffic-prediction-dataset.csv",
+    "steps": 16128,
+    "junctions": [
+      "Cross 1",
+      "Cross 2",
+      "Cross 3",
+      "Cross 4",
+      "Cross 5",
+      "Cross 6"
+    ],
+    "days": 56,
+    "step_minutes_inferred": 5,
+    "outage_rule": "runs of >= 12 steps with every junction at 0",
+    "outage_steps": 2827
+  },
+  "split_days": {
+    "train": [
+      1,
+      40
+    ],
+    "validation": [
+      41,
+      48
+    ],
+    "test": [
+      49,
+      56
+    ]
+  },
+  "horizons_minutes": [
+    5,
+    15,
+    30,
+    60
+  ],
+  "selection": {
+    "rule": "lowest mean validation MAE over horizons",
+    "selected": "gbm_poisson",
+    "validation_mae": {
+      "gbm_squared_error": {
+        "5": 9.3172,
+        "15": 9.8426,
+        "30": 10.5997,
+        "60": 11.6168
+      },
+      "gbm_poisson": {
+        "5": 9.3414,
+        "15": 9.8461,
+        "30": 10.5933,
+        "60": 11.5653
+      }
+    }
+  },
+  "validation": {
+    "5": {
+      "horizon_minutes": 5,
+      "model": {
+        "n": 13824,
+        "mae": 9.3414,
+        "rmse": 13.5353,
+        "r2": 0.9515,
+        "wape": 0.1127
+      },
+      "persistence": {
+        "n": 13824,
+        "mae": 12.1915,
+        "rmse": 17.3491,
+        "r2": 0.9203,
+        "wape": 0.147
+      },
+      "same_time_yesterday": {
+        "n": 13824,
+        "mae": 19.3364,
+        "rmse": 30.4841,
+        "r2": 0.7538,
+        "wape": 0.2332
+      }
+    },
+    "15": {
+      "horizon_minutes": 15,
+      "model": {
+        "n": 13824,
+        "mae": 9.8461,
+        "rmse": 14.6886,
+        "r2": 0.9428,
+        "wape": 0.1187
+      },
+      "persistence": {
+        "n": 13824,
+        "mae": 13.6963,
+        "rmse": 20.0566,
+        "r2": 0.8934,
+        "wape": 0.1652
+      },
+      "same_time_yesterday": {
+        "n": 13824,
+        "mae": 19.3364,
+        "rmse": 30.4841,
+        "r2": 0.7538,
+        "wape": 0.2332
+      }
+    },
+    "30": {
+      "horizon_minutes": 30,
+      "model": {
+        "n": 13824,
+        "mae": 10.5933,
+        "rmse": 16.1708,
+        "r2": 0.9307,
+        "wape": 0.1277
+      },
+      "persistence": {
+        "n": 13824,
+        "mae": 17.3239,
+        "rmse": 26.1952,
+        "r2": 0.8182,
+        "wape": 0.2089
+      },
+      "same_time_yesterday": {
+        "n": 13824,
+        "mae": 19.3364,
+        "rmse": 30.4841,
+        "r2": 0.7538,
+        "wape": 0.2332
+      }
+    },
+    "60": {
+      "horizon_minutes": 60,
+      "model": {
+        "n": 13824,
+        "mae": 11.5653,
+        "rmse": 17.6252,
+        "r2": 0.9177,
+        "wape": 0.1395
+      },
+      "persistence": {
+        "n": 13824,
+        "mae": 24.1863,
+        "rmse": 36.8614,
+        "r2": 0.64,
+        "wape": 0.2917
+      },
+      "same_time_yesterday": {
+        "n": 13824,
+        "mae": 19.3364,
+        "rmse": 30.4841,
+        "r2": 0.7538,
+        "wape": 0.2332
+      }
+    }
+  },
+  "final_model": {
+    "created_at": "2026-11-25T13:07:12+00:00",
+    "estimator": "HistGradientBoostingRegressor (gbm_poisson)",
+    "sklearn_version": "1.9.1",
+    "feature_names": [
+      "junction",
+      "now",
+      "lag_1",
+      "lag_2",
+      "lag_3",
+      "lag_6",
+      "lag_12",
+      "mean_15m",
+      "mean_1h",
+      "mean_3h",
+      "std_1h",
+      "delta_5m",
+      "delta_15m",
+      "network_total_now",
+      "network_mean_1h",
+      "target_slot_of_day",
+      "same_slot_yesterday",
+      "same_slot_yesterday_25m_mean",
+      "yesterday_at_origin",
+      "now_vs_yesterday",
+      "same_slot_last_week"
+    ],
+    "fit_days": [
+      1,
+      48
+    ],
+    "interval_method": "validation residual quantiles, scaled by sqrt(forecast), per junction and horizon"
+  },
+  "interval_level": 0.8,
+  "test_evaluated": true,
+  "test_evaluation_count": 1,
+  "test": {
+    "5": {
+      "horizon_minutes": 5,
+      "model": {
+        "n": 13824,
+        "mae": 9.9636,
+        "rmse": 15.7527,
+        "r2": 0.9439,
+        "wape": 0.1145
+      },
+      "persistence": {
+        "n": 13824,
+        "mae": 12.2854,
+        "rmse": 18.5501,
+        "r2": 0.9223,
+        "wape": 0.1412
+      },
+      "same_time_yesterday": {
+        "n": 13824,
+        "mae": 23.1283,
+        "rmse": 36.8228,
+        "r2": 0.6937,
+        "wape": 0.2658
+      },
+      "interval": {
+        "nominal_coverage": 0.8,
+        "observed_coverage": 0.7963,
+        "coverage_by_forecast_load": {
+          "quiet": 0.842,
+          "middle": 0.773,
+          "busy": 0.7739
+        },
+        "mean_width": 29.0395
+      },
+      "model_mae_by_junction": {
+        "Cross 1": 12.7489,
+        "Cross 2": 10.183,
+        "Cross 3": 6.3292,
+        "Cross 4": 12.1357,
+        "Cross 5": 6.9875,
+        "Cross 6": 11.3976
+      }
+    },
+    "15": {
+      "horizon_minutes": 15,
+      "model": {
+        "n": 13824,
+        "mae": 10.83,
+        "rmse": 17.3704,
+        "r2": 0.9318,
+        "wape": 0.1245
+      },
+      "persistence": {
+        "n": 13824,
+        "mae": 14.7473,
+        "rmse": 22.3557,
+        "r2": 0.8871,
+        "wape": 0.1695
+      },
+      "same_time_yesterday": {
+        "n": 13824,
+        "mae": 23.1283,
+        "rmse": 36.8228,
+        "r2": 0.6937,
+        "wape": 0.2658
+      },
+      "interval": {
+        "nominal_coverage": 0.8,
+        "observed_coverage": 0.7808,
+        "coverage_by_forecast_load": {
+          "quiet": 0.7954,
+          "middle": 0.7669,
+          "busy": 0.7802
+        },
+        "mean_width": 30.5063
+      },
+      "model_mae_by_junction": {
+        "Cross 1": 13.7895,
+        "Cross 2": 10.8433,
+        "Cross 3": 7.2007,
+        "Cross 4": 12.8162,
+        "Cross 5": 7.5329,
+        "Cross 6": 12.7976
+      }
+    },
+    "30": {
+      "horizon_minutes": 30,
+      "model": {
+        "n": 13824,
+        "mae": 11.7973,
+        "rmse": 18.4111,
+        "r2": 0.9234,
+        "wape": 0.1356
+      },
+      "persistence": {
+        "n": 13824,
+        "mae": 19.1944,
+        "rmse": 29.0749,
+        "r2": 0.809,
+        "wape": 0.2206
+      },
+      "same_time_yesterday": {
+        "n": 13824,
+        "mae": 23.1283,
+        "rmse": 36.8228,
+        "r2": 0.6937,
+        "wape": 0.2658
+      },
+      "interval": {
+        "nominal_coverage": 0.8,
+        "observed_coverage": 0.7695,
+        "coverage_by_forecast_load": {
+          "quiet": 0.7747,
+          "middle": 0.7628,
+          "busy": 0.7711
+        },
+        "mean_width": 32.4855
+      },
+      "model_mae_by_junction": {
+        "Cross 1": 14.6065,
+        "Cross 2": 11.916,
+        "Cross 3": 8.2342,
+        "Cross 4": 13.966,
+        "Cross 5": 8.0237,
+        "Cross 6": 14.0375
+      }
+    },
+    "60": {
+      "horizon_minutes": 60,
+      "model": {
+        "n": 13824,
+        "mae": 13.1522,
+        "rmse": 20.7613,
+        "r2": 0.9026,
+        "wape": 0.1512
+      },
+      "persistence": {
+        "n": 13824,
+        "mae": 27.014,
+        "rmse": 41.1225,
+        "r2": 0.6179,
+        "wape": 0.3105
+      },
+      "same_time_yesterday": {
+        "n": 13824,
+        "mae": 23.1283,
+        "rmse": 36.8228,
+        "r2": 0.6937,
+        "wape": 0.2658
+      },
+      "interval": {
+        "nominal_coverage": 0.8,
+        "observed_coverage": 0.7582,
+        "coverage_by_forecast_load": {
+          "quiet": 0.7556,
+          "middle": 0.7526,
+          "busy": 0.7663
+        },
+        "mean_width": 35.441
+      },
+      "model_mae_by_junction": {
+        "Cross 1": 15.6149,
+        "Cross 2": 13.2699,
+        "Cross 3": 9.7466,
+        "Cross 4": 14.572,
+        "Cross 5": 9.0189,
+        "Cross 6": 16.6909
+      }
+    }
+  },
+  "training_seconds": 34.1
+}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block main_class %}auth-page{% endblock %}
+{% block content %}
+<section class="card auth-card" aria-labelledby="login-title">
+  <h1 id="login-title">Sign in</h1>
+  <p class="muted">Use your username or email address.</p>
+  {% if error %}<p class="form-error" role="alert" id="login-error">{{ error }}</p>{% endif %}
+  <form method="post" action="{{ url_for('auth.login') }}" class="form" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+    <div class="field">
+      <label for="identifier">Username or email</label>
+      <input id="identifier" name="identifier" value="{{ identifier }}" autocomplete="username" required autofocus
+             maxlength="254" {% if error %}aria-describedby="login-error" aria-invalid="true"{% endif %}>
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required maxlength="128">
+    </div>
+    <button type="submit" class="btn btn--primary btn--block">Sign in</button>
+  </form>
+  {% if config.REGISTRATION_OPEN %}
+    <p class="auth-card__alt">New here? <a href="{{ url_for('auth.register') }}">Create an account</a></p>
+  {% endif %}
+</section>
+{% endblock %}

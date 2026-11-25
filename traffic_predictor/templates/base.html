@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Traffic Predictor{% endblock %} · Traffic Predictor</title>
+  <meta name="description" content="Short-term traffic forecasts for six road junctions, with honest accuracy reporting.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="{{ asset('img/favicon.svg') }}" type="image/svg+xml">
+  <script src="{{ asset('js/theme.js') }}"></script>
+  <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="topbar">
+    <div class="topbar__inner">
+      <a class="brand" href="{{ url_for('views.index') }}">
+        <svg class="brand__mark" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="1.5" width="10" height="21" rx="3"/><circle cx="12" cy="6.5" r="2.2" class="brand__red"/><circle cx="12" cy="12" r="2.2" class="brand__amber"/><circle cx="12" cy="17.5" r="2.2" class="brand__green"/></svg>
+        <span>Traffic Predictor</span>
+      </a>
+      {% set endpoint = request.endpoint or '' %}
+      <nav class="nav" aria-label="Main">
+        {% if g.user %}
+          <a href="{{ url_for('views.dashboard') }}" {% if endpoint == 'views.dashboard' %}aria-current="page"{% endif %}>Dashboard</a>
+        {% endif %}
+        <a href="{{ url_for('views.model_report') }}" {% if endpoint == 'views.model_report' %}aria-current="page"{% endif %}>Model</a>
+        {% if g.user %}
+          <a href="{{ url_for('auth.account') }}" {% if endpoint == 'auth.account' %}aria-current="page"{% endif %}>Account</a>
+        {% endif %}
+      </nav>
+      <div class="topbar__actions">
+        <button type="button" class="icon-btn" id="theme-toggle" aria-label="Switch colour theme" title="Switch colour theme">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg>
+        </button>
+        {% if g.user %}
+          <form method="post" action="{{ url_for('auth.logout') }}" class="inline-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn--ghost btn--sm">Sign out</button>
+          </form>
+        {% elif endpoint not in ('auth.login', 'auth.register') %}
+          <a class="btn btn--ghost btn--sm" href="{{ url_for('auth.login') }}">Sign in</a>
+          {% if config.REGISTRATION_OPEN %}<a class="btn btn--primary btn--sm" href="{{ url_for('auth.register') }}">Create account</a>{% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="{% block main_class %}page{% endblock %}" tabindex="-1">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flashes" role="status">
+          {% for category, message in messages %}
+            <p class="flash flash--{{ category }}">{{ message }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    <p>Traffic Predictor {{ app_version }} · Forecasts come from recorded junction counts, not a live sensor feed. <a href="{{ url_for('views.model_report') }}">How the model works</a></p>
+  </footer>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

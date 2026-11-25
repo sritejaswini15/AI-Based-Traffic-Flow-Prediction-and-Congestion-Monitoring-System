@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Model report{% endblock %}
+{% macro num(v, d=2) %}{% if v is none %}–{% else %}{{ "%.*f"|format(d, v) }}{% endif %}{% endmacro %}
+{% macro pct(v) %}{% if v is none %}–{% else %}{{ "%.1f"|format(v * 100) }}%{% endif %}{% endmacro %}
+{% macro gain(model, base) %}{% if model is none or base in (none, 0) %}–{% else %}{{ "%.0f"|format((1 - model / base) * 100) }}%{% endif %}{% endmacro %}
+{% macro results_table(rows, caption) %}
+<div class="table-scroll">
+<table class="table">
+  <caption>{{ caption }}</caption>
+  <thead>
+    <tr>
+      <th scope="col">Horizon</th>
+      <th scope="col">Model MAE</th>
+      <th scope="col">“Same as now” MAE</th>
+      <th scope="col">“Same time yesterday” MAE</th>
+      <th scope="col">Error cut vs “same as now”</th>
+      <th scope="col">Model R²</th>
+      <th scope="col">Model WAPE</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for minutes, r in rows.items() %}
+    <tr>
+      <th scope="row">{{ minutes }} min</th>
+      <td>{{ num(r.model.mae) }}</td>
+      <td>{{ num(r.persistence.mae) }}</td>
+      <td>{{ num(r.same_time_yesterday.mae) }}</td>
+      <td>{{ gain(r.model.mae, r.persistence.mae) }}</td>
+      <td>{{ num(r.model.r2, 3) }}</td>
+      <td>{{ pct(r.model.wape) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endmacro %}
+{% macro ranges_table(rows) %}
+<div class="table-scroll">
+<table class="table">
+  <caption>How often the 80% range held the actual reading (test days)</caption>
+  <thead>
+    <tr><th scope="col">Horizon</th><th scope="col">All readings</th><th scope="col">Quiet times</th><th scope="col">Middle</th><th scope="col">Busy times</th><th scope="col">Mean range width</th></tr>
+  </thead>
+  <tbody>
+    {% for minutes, r in rows.items() %}{% set by = r.interval.coverage_by_forecast_load or {} %}
+    <tr>
+      <th scope="row">{{ minutes }} min</th>
+      <td>{{ pct(r.interval.observed_coverage) }}</td><td>{{ pct(by.quiet) }}</td><td>{{ pct(by.middle) }}</td><td>{{ pct(by.busy) }}</td>
+      <td>{{ num(r.interval.mean_width, 1) }} vehicles</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endmacro %}
+
+{% block content %}
+<article class="prose-page stack">
+  <header>
+    <p class="eyebrow">Model report</p>
+    <h1>How the forecasts are made, and how good they are</h1>
+    <p class="lead">Every figure on this page is read from the training run's saved metrics, not typed by hand.</p>
+  </header>
+
+  {% if not metrics %}
+    <p class="notice">No metrics file was found next to the model. Run <code>python -m scripts.train</code> to produce one.</p>
+  {% else %}
+  {% set ds = metrics.dataset %}{% set split = metrics.split_days %}
+  <section class="card">
+    <h2>In short</h2>
+    <dl class="facts facts--grid">
+      <div><dt>Model</dt><dd>{{ metrics.final_model.estimator }}, one per horizon</dd></div>
+      <div><dt>Horizons</dt><dd>{{ metrics.horizons_minutes | join(", ") }} minutes ahead</dd></div>
+      <div><dt>Data</dt><dd>{{ ds.days }} days × {{ ds.junctions | length }} junctions, {{ "{:,}".format(ds.steps) }} readings each</dd></div>
+      <div><dt>Split, in time order</dt><dd>train days {{ split.train[0] }}–{{ split.train[1] }}, validation {{ split.validation[0] }}–{{ split.validation[1] }}, test {{ split.test[0] }}–{{ split.test[1] }}</dd></div>
+      <div><dt>Final fit</dt><dd>days {{ metrics.final_model.fit_days[0] }}–{{ metrics.final_model.fit_days[1] }}; the test days are never used for fitting</dd></div>
+      <div><dt>Trained</dt><dd>{{ metrics.final_model.created_at }} · scikit-learn {{ metrics.final_model.sklearn_version }}</dd></div>
+    </dl>
+  </section>
+
+  <section class="card">
+    <h2>Accuracy on the test days</h2>
+    {% if metrics.test %}
+      <p>Scored once on days {{ split.test[0] }}–{{ split.test[1] }}, after every modelling choice was fixed
+        {%- if metrics.test_evaluation_count > 1 %} (scored {{ metrics.test_evaluation_count }} times in total, so treat these figures as slightly optimistic){% endif %}.
+        These are the days the dashboard replays. MAE is the mean absolute error in vehicles per reading, and lower is better.</p>
+      {% if metrics.note %}<p class="notice">{{ metrics.note }}</p>{% endif %}
+      {{ results_table(metrics.test, "Held-out test days") }}
+      <p class="muted">“Same as now” means the next reading equals the current one. “Same time yesterday” repeats the reading from 24 hours earlier.</p>
+      {{ ranges_table(metrics.test) }}
+      <p class="muted">Close to 80% means the range is honest. Quiet, middle and busy are the lower, middle and upper thirds of forecasts by size.</p>
+      {% set longest = metrics.test[metrics.test | list | last] %}
+      {% if longest.model_mae_by_junction %}
+        <h3>{{ longest.horizon_minutes }}-minute error by junction</h3>
+        <ul class="inline-stats">
+          {% for name, mae in longest.model_mae_by_junction.items() %}<li><span>{{ name }}</span> <strong>{{ num(mae) }}</strong></li>{% endfor %}
+        </ul>
+      {% endif %}
+    {% else %}
+      <p class="notice">The test days have not been scored yet. They stay untouched until the model is final. Then run
+        <code>python -m scripts.train --evaluate-test</code> once.</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h2>Validation days (used to choose the model)</h2>
+    <p>Models were fit on days {{ split.train[0] }}–{{ split.train[1] }} and compared on days {{ split.validation[0] }}–{{ split.validation[1] }}.
+      The loss with the lowest mean validation MAE was kept: <strong>{{ metrics.selection.selected }}</strong>.
+      The 80% ranges are the 10th and 90th percentiles of the validation errors, per junction and horizon.
+      Errors are scaled by the square root of the forecast first, so ranges are wider at busy times, when counts vary more.</p>
+    {{ results_table(metrics.validation, "Validation days") }}
+  </section>
+
+  <section class="card">
+    <h2>Data handling</h2>
+    <ul class="bullets">
+      <li>The source CSV (<code>{{ ds.file }}</code>) has one column per junction and no timestamps.
+        Readings repeat on a 288-row cycle. At 5 minutes per reading that is exactly one day, and a weekly 2,016-row cycle is also present.
+        Taking row 0 as midnight puts the daily low near 02:00 and the peak near 08:30. These clock times are inferred, not given by the source.</li>
+      <li>{{ "{:,}".format(ds.outage_steps) }} readings ({{ "%.1f"|format(ds.outage_steps / ds.steps * 100) }}%) are sensor outages, meaning {{ ds.outage_rule }}.
+        They are treated as missing rather than as zero traffic, and no forecast is scored against them.</li>
+      <li>Features use only readings up to the moment of the forecast: recent counts and trends, the network total,
+        the same time yesterday and last week, and the time of day being forecast. An automated test checks that no future reading leaks in.</li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>Limits</h2>
+    <ul class="bullets">
+      <li>Six junctions and 56 days only. There are no dates, so the model knows nothing about weekdays, holidays, weather or events.</li>
+      <li>There is no live feed. The dashboard replays recorded test days, and connecting real sensors would need a data-ingestion service.</li>
+      <li>The ranges come from 8 validation days. Rare events, such as an incident or a new outage pattern, will fall outside them more often than 20% of the time.</li>
+      <li>The level thresholds come from each junction's own history. A “heavy” reading at a quiet junction can still be a small number.</li>
+    </ul>
+  </section>
+  {% endif %}
+</article>
+{% endblock %}
